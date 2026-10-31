@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GIRO APP</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#071A13;--bg2:#10251C;--gold:#D4AF37;--fg:#fff;--green:#16834A;--red:#D94848;--mut:#9db3a8}
+:root[data-theme=light]{--bg:#f4f7f5;--bg2:#fff;--fg:#071A13;--mut:#52665c}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--fg);font:16px system-ui,sans-serif;padding:16px}
+.card{width:100%;max-width:400px;background:var(--bg2);border:1px solid #d4af3744;border-radius:16px;padding:24px}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+h1{margin:0;font-size:22px;letter-spacing:3px;color:var(--gold)}
+label{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid #d4af3755;background:transparent;color:var(--fg);font-size:16px}
+button{width:100%;margin-top:16px;padding:12px;border:0;border-radius:10px;background:var(--gold);color:#071A13;font-weight:700;font-size:16px;cursor:pointer}
+select option{background:var(--bg2);color:var(--fg)}
+@media print{body{background:#fff;color:#000}.top,button{display:none}.card{border:0}}
+.link{background:none;color:var(--gold);font-weight:500;margin-top:8px}
+#msg{min-height:20px;margin-top:12px;font-size:14px}.err{color:var(--red)}.ok{color:var(--green)}
+.top{display:flex;gap:8px;justify-content:flex-end;margin-bottom:8px}.top button{width:auto;margin:0;padding:4px 10px;font-size:13px;background:none;color:var(--gold);border:1px solid #d4af3766}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="top"><button id="lang"></button><button id="theme">◐</button></div>
+  <div class="logo">
+    <svg width="48" height="48" viewBox="0 0 48 48" aria-label="GIRO"><rect width="48" height="48" rx="12" fill="#10251C" stroke="#D4AF37" stroke-width="2"/><path d="M33 17a11 11 0 1 0 2 9H25" fill="none" stroke="#D4AF37" stroke-width="4" stroke-linecap="round"/></svg>
+    <h1>GIRO</h1>
+  </div>
+  <div id="view"></div>
+  <div id="msg"></div>
+</div>
+<script>
+// SET THESE (anon key only; never put the service_role key in frontend code)
+const SUPABASE_URL = "https://nlytjjtjczkmkoymsgfg.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_NUb9Ez7cRrfiosgxut0jlA_S7xRnmrh";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const T = {
+ so:{login:"Gal",reg:"Isdiiwaangeli",email:"Iimaylka",pw:"Erayga sirta",name:"Magaca buuxa",forgot:"Ilowday erayga sirta?",
+  noacc:"Akoon ma lihid? Isdiiwaangeli",hasacc:"Akoon leh? Gal",bizname:"Magaca ganacsiga",create:"Abuur ganacsi",
+  out:"Ka bax",check:"Fiiri iimaylkaaga si aad u xaqiijiso.",reset:"Isku xirka dib-u-dejinta waa la diray.",welcome:"Ku soo dhawow",
+  sub:"Kadib tijaabada: $5 / 30 maalmood",trial:"Tijaabo bilaash ah",sales:"Iibka",pick:"Dooro alaab",addline:"Ku dar",disc:"Dhimis ($)",method:"Habka lacag bixinta",other:"Kale",tot:"Wadarta",done:"Dhammaystir iibka",recent:"Iibkii u dambeeyay",receipt:"Rasiid",print:"Daabac",nostock:"Alaab kuma jirto ama way dhammaatay",cartempty:"Dooro alaab marka hore",overstock:"Tirada way ka badan tahay stock-ga",baddisc:"Dhimistu way ka badan tahay wadarta",nostockerr:"Stock ma filna: ",inv:"Alaabta",pname:"Magaca alaabta",buy:"Qiimaha iibsashada",sell:"Qiimaha iibka",qty:"Tirada",low:"Way yaraatay",del:"Tirtir",add:"Ku dar alaab",askdel:"Ma tirtirtaa alaabtan?",noprod:"Alaab weli ma jirto",bad:"Hubi magaca iyo tirooyinka",pay:"Bixi $5",payInstr:"1) Ku dir $5 EVC Plus lambarka 618598555. 2) Hoos geli tixraaca (reference) ee fariinta EVC. 3) Riix Gudbi. Waan hubin doonaa.",ref:"Tixraaca EVC",send:"Gudbi",sent:"La gudbiyay. Sug hubinta.",dup:"Tixraacan hore ayaa loo isticmaalay ama mid sugaya ayaa jira.",hist:"Lacagaha hore",back:"Dib",admin:"Maamulka GIRO",ok:"Aqbal",no:"Diid",none:"Ma jiraan lacag sugaya",st_submitted:"sugaya",st_approved:"la aqbalay",st_rejected:"la diiday",days:"maalmood ayaa hadhay",active:"Isdiiwaangelin shaqaynaysa",ended:"Tijaabadii way dhammaatay. Bishii $5 ku bixi si aad u sii isticmaasho.",err:"Khalad"},
+ en:{login:"Log in",reg:"Register",email:"Email",pw:"Password",name:"Full name",forgot:"Forgot password?",
+  noacc:"No account? Register",hasacc:"Have an account? Log in",bizname:"Business name",create:"Create business",
+  out:"Log out",check:"Check your email to verify your account.",reset:"Password reset link sent.",welcome:"Welcome",
+  sub:"After trial: $5 / 30 days",trial:"Free trial",sales:"Sales",pick:"Choose a product",addline:"Add",disc:"Discount ($)",method:"Payment method",other:"Other",tot:"Total",done:"Complete sale",recent:"Recent sales",receipt:"Receipt",print:"Print",nostock:"No products in stock",cartempty:"Add a product first",overstock:"Quantity is more than stock",baddisc:"Discount is more than the total",nostockerr:"Not enough stock: ",inv:"Products",pname:"Product name",buy:"Purchase price",sell:"Selling price",qty:"Quantity",low:"Low stock",del:"Delete",add:"Add product",askdel:"Delete this product?",noprod:"No products yet",bad:"Check the name and numbers",pay:"Pay $5",payInstr:"1) Send $5 by EVC Plus to 618598555. 2) Enter the reference from the EVC message below. 3) Tap Submit. We will verify it.",ref:"EVC reference",send:"Submit",sent:"Submitted. Waiting for verification.",dup:"This reference was already used, or a payment is already pending.",hist:"Payment history",back:"Back",admin:"GIRO Admin",ok:"Approve",no:"Reject",none:"No pending payments",st_submitted:"pending",st_approved:"approved",st_rejected:"rejected",days:"days left",active:"Active subscription",ended:"Your free trial has ended. Pay $5/month to continue.",err:"Error"}
+};
+const esc = x => String(x ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let curBiz = null, lang = localStorage.getItem("giro_lang") || "so", mode = "login";
+const t = k => T[lang][k], $ = id => document.getElementById(id);
+const say = (m, ok) => { $("msg").className = ok ? "ok" : "err"; $("msg").textContent = m || ""; };
+
+async function render() {
+  document.documentElement.lang = lang; $("lang").textContent = lang === "so" ? "EN" : "SO"; say("");
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return authView();
+  const { data: me } = await sb.from("profiles").select("is_super_admin").eq("id", session.user.id).single();
+  if (me && me.is_super_admin) return adminView();
+  const { data: mem } = await sb.from("business_members").select("business_id,role,businesses(name)").limit(1);
+  if (!mem || !mem.length) return bizView();
+  curBiz = mem[0].business_id;
+  const { data: st } = await sb.rpc("dashboard_stats", { p_business: curBiz });
+  const m = n => "$" + Number(n || 0).toFixed(2);
+  const statsHtml = st ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0">${[
+    ["todaySales", m(st.today_sales)], ["monthSales", m(st.month_sales)], ["monthExp", m(st.month_expenses)],
+    ["profit", m(st.month_sales - st.month_cogs - st.month_expenses)], ["lowStock", st.low_stock + " / " + st.products], ["debtsOut", m(st.debts_out)]
+  ].map(([k, v]) => `<div style="border:1px solid #d4af3744;border-radius:10px;padding:10px"><div style="font-size:12px;color:var(--mut)">${t(k)}</div><b>${v}</b></div>`).join("")}</div>` : "";
+  const { data: sub } = await sb.from("subscriptions").select("status,expires_at,is_trial").eq("business_id", mem[0].business_id).single();
+  const left = sub && sub.expires_at ? Math.ceil((new Date(sub.expires_at) - Date.now()) / 864e5) : 0;
+  const live = sub && sub.status === "active" && left > 0;
+  const info = live ? (sub.is_trial ? `${t("trial")}: <b style="color:var(--gold)">${left}</b> ${t("days")}` : `${t("active")}: ${left} ${t("days")}`)
+                    : `<span class="err">${t("ended")}</span>`;
+  $("view").innerHTML = `<h2>${t("welcome")}, ${esc(mem[0].businesses.name)}</h2>
+    <p>${info}</p>${statsHtml}<p style="color:var(--mut)">${t("sub")}</p>
+    <button id="sal">${t("sales")}</button><button id="dbt">${t("debts")}</button><button id="exp">${t("exps")}</button><button id="inv">${t("inv")}</button><button id="pay">${t("pay")}</button><button class="link" id="out">${t("out")}</button>`;
+  $("sal").onclick = salesView;
+  $("dbt").onclick = debtView;
+  $("exp").onclick = expView;
+  $("inv").onclick = invView;
+  $("pay").onclick = payView;
+  $("out").onclick = async () => { await sb.auth.signOut(); render(); };
+}
+function authView() {
+  const reg = mode === "reg";
+  $("view").innerHTML = `${reg ? `<label>${t("name")}</label><input id="n" autocomplete="name">` : ""}
+    <label>${t("email")}</label><input id="e" type="email" autocomplete="email">
+    <label>${t("pw")}</label><input id="p" type="password" minlength="8" autocomplete="${reg ? "new" : "current"}-password">
+    <button id="go">${reg ? t("reg") : t("login")}</button>
+    <button class="link" id="sw">${reg ? t("hasacc") : t("noacc")}</button>
+    ${reg ? "" : `<button class="link" id="fg">${t("forgot")}</button>`}`;
+  $("sw").onclick = () => { mode = reg ? "login" : "reg"; authView(); };
+  if (!reg) $("fg").onclick = async () => {
+    const e = $("e").value.trim(); if (!e) return say(t("email"));
+    const { error } = await sb.auth.resetPasswordForEmail(e, { redirectTo: location.href });
+    error ? say(error.message) : say(t("reset"), true);
+  };
+  $("go").onclick = async () => {
+    const e = $("e").value.trim(), p = $("p").value;
+    if (!/^\S+@\S+\.\S+$/.test(e) || p.length < 8) return say(t("err") + ": " + t("email") + " / " + t("pw") + " (8+)");
+    if (reg) {
+      const { data, error } = await sb.auth.signUp({ email: e, password: p, options: { data: { full_name: $("n").value.trim() } } });
+      if (error) return say(error.message);
+      return data.session ? render() : say(t("check"), true);
+    }
+    const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
+    error ? say(error.message) : render();
+  };
+}
+Object.assign(T.so, { todaySales: "Iibka maanta", monthSales: "Iibka bishan", monthExp: "Kharashka bishan", profit: "Faa'iidada bishan", lowStock: "Stock yar / alaab", debtsOut: "Deymaha harsan",
+  debts: "Deymaha", exps: "Kharashaadka", cat: "Nooca", amt: "Qadarka ($)", note: "Faahfaahin", save: "Keydi", cname: "Magaca macmiilka", phone: "Telefoon",
+  remain: "Harsan", payb: "Bixi", payamt: "Qadarka la bixiyay ($)", toolarge: "Qadarku wuu ka badan yahay deynta harsan", noexp: "Kharash weli ma jiro", nodebt: "Deyn weli ma jiro", newdebt: "Deyn cusub", newexp: "Kharash cusub" });
+Object.assign(T.en, { todaySales: "Sales today", monthSales: "Sales this month", monthExp: "Expenses this month", profit: "Profit this month", lowStock: "Low stock / products", debtsOut: "Outstanding debts",
+  debts: "Debts", exps: "Expenses", cat: "Category", amt: "Amount ($)", note: "Note", save: "Save", cname: "Customer name", phone: "Phone",
+  remain: "Remaining", payb: "Pay", payamt: "Amount paid ($)", toolarge: "Amount is more than the remaining debt", noexp: "No expenses yet", nodebt: "No debts yet", newdebt: "New debt", newexp: "New expense" });
+const fail = e => say(e.code === "42501" || /inactive/.test(e.message) ? t("ended") : /too large/.test(e.message) ? t("toolarge") : e.message);
+async function expView() {
+  const { data: rows, error } = await sb.from("expenses").select("id,category,amount,note,expense_date").eq("business_id", curBiz).order("expense_date", { ascending: false }).order("created_at", { ascending: false }).limit(30);
+  if (error) return say(error.message);
+  const cats = lang === "so" ? ["Kiro", "Mushaar", "Korontada/Biyaha", "Gaadiid", "Kale"] : ["Rent", "Salary", "Utilities", "Transport", "Other"];
+  const list = (rows || []).map(r => `<div style="border:1px solid #d4af3744;border-radius:10px;padding:10px;margin:8px 0"><b>${esc(r.category)}</b> · $${esc(r.amount)}<br><span style="color:var(--mut)">${esc(r.expense_date)} ${esc(r.note || "")}</span><button class="link" data-xd="${r.id}">${t("del")}</button></div>`).join("");
+  $("view").innerHTML = `<h2>${t("exps")}</h2>${list || `<p style="color:var(--mut)">${t("noexp")}</p>`}<h3>${t("newexp")}</h3>
+    <label>${t("cat")}</label><select id="xc">${cats.map(c => `<option>${c}</option>`).join("")}</select>
+    <label>${t("amt")}</label><input id="xa" type="number" min="0" step="0.01" inputmode="decimal">
+    <label>${t("note")}</label><input id="xn" maxlength="200">
+    <button id="xs">${t("save")}</button><button class="link" id="bk">${t("back")}</button>`;
+  $("bk").onclick = render;
+  document.querySelectorAll("button[data-xd]").forEach(b => b.onclick = async () => {
+    if (!confirm(t("askdel"))) return;
+    const { error } = await sb.from("expenses").delete().eq("id", b.dataset.xd); error ? fail(error) : expView();
+  });
+  $("xs").onclick = async () => {
+    const a = parseFloat($("xa").value); if (!(a > 0)) return say(t("bad"));
+    const { error } = await sb.from("expenses").insert({ business_id: curBiz, category: $("xc").value, amount: a, note: $("xn").value.trim() || null });
+    error ? fail(error) : expView();
+  };
+}
+async function debtView() {
+  const { data: rows, error } = await sb.from("debts").select("id,customer_name,phone,amount,paid,note").eq("business_id", curBiz).order("created_at", { ascending: false }).limit(50);
+  if (error) return say(error.message);
+  const list = (rows || []).map(r => { const rem = Number(r.amount) - Number(r.paid); return `<div style="border:1px solid #d4af3744;border-radius:10px;padding:10px;margin:8px 0"><b>${esc(r.customer_name)}</b> ${esc(r.phone || "")}<br>
+    $${esc(r.amount)} · ${t("remain")}: <b style="color:${rem > 0 ? "var(--gold)" : "var(--green)"}">$${rem.toFixed(2)}</b>${rem > 0 ? `<button data-dp="${r.id}" data-rem="${rem}">${t("payb")}</button>` : " ✓"}</div>`; }).join("");
+  $("view").innerHTML = `<h2>${t("debts")}</h2>${list || `<p style="color:var(--mut)">${t("nodebt")}</p>`}<h3>${t("newdebt")}</h3>
+    <label>${t("cname")}</label><input id="dn" maxlength="120"><label>${t("phone")}</label><input id="dp" type="tel">
+    <label>${t("amt")}</label><input id="da" type="number" min="0" step="0.01" inputmode="decimal"><label>${t("note")}</label><input id="dt" maxlength="200">
+    <button id="ds">${t("save")}</button><button class="link" id="bk">${t("back")}</button>`;
+  $("bk").onclick = render;
+  document.querySelectorAll("button[data-dp]").forEach(b => b.onclick = async () => {
+    const a = parseFloat(prompt(t("payamt") + " (max " + b.dataset.rem + ")")); if (!(a > 0)) return;
+    const { error } = await sb.rpc("add_debt_payment", { p_debt: b.dataset.dp, p_amount: a }); error ? fail(error) : debtView();
+  });
+  $("ds").onclick = async () => {
+    const n = $("dn").value.trim(), a = parseFloat($("da").value); if (!n || !(a > 0)) return say(t("bad"));
+    const { error } = await sb.from("debts").insert({ business_id: curBiz, customer_name: n, phone: $("dp").value.trim() || null, amount: a, note: $("dt").value.trim() || null });
+    error ? fail(error) : debtView();
+  };
+}
+let cart = [];
+async function salesView() {
+  const [{ data: prods, error: e1 }, { data: hist }] = await Promise.all([
+    sb.from("products").select("id,name,selling_price,quantity").eq("business_id", curBiz).gt("quantity", 0).order("name"),
+    sb.from("sales").select("id,total,created_at").eq("business_id", curBiz).order("created_at", { ascending: false }).limit(10)]);
+  if (e1) return say(e1.message);
+  const byId = Object.fromEntries((prods || []).map(p => [p.id, p]));
+  const opts = (prods || []).map(p => `<option value="${p.id}">${esc(p.name)} ($${esc(p.selling_price)}) · ${esc(p.quantity)}</option>`).join("");
+  const hh = (hist || []).map(h => `<button class="link" data-sale="${h.id}">${new Date(h.created_at).toLocaleString()} · $${esc(h.total)}</button>`).join("");
+  cart = [];
+  $("view").innerHTML = `<h2>${t("sales")}</h2>
+    ${opts ? `<label>${t("pick")}</label><select id="sp">${opts}</select>
+    <label>${t("qty")}</label><input id="sq" type="number" min="1" step="1" value="1" inputmode="numeric">
+    <button id="sadd">${t("addline")}</button>` : `<p style="color:var(--mut)">${t("nostock")}</p>`}
+    <div id="cart"></div>
+    <label>${t("disc")}</label><input id="sd" type="number" min="0" step="0.01" value="0" inputmode="decimal">
+    <label>${t("method")}</label><select id="sm"><option value="cash">Cash</option><option value="evc_plus">EVC Plus</option><option value="other">${t("other")}</option></select>
+    <p id="tot" style="font-size:20px;color:var(--gold)"></p>
+    <button id="sdone">${t("done")}</button><button class="link" id="bk">${t("back")}</button>
+    <h3>${t("recent")}</h3>${hh}`;
+  $("bk").onclick = render;
+  const calc = () => { const sub = cart.reduce((a, l) => a + l.q * Number(byId[l.id].selling_price), 0); const d = parseFloat($("sd").value) || 0; return { sub, d, tot: sub - d }; };
+  const draw = () => {
+    $("cart").innerHTML = cart.map((l, i) => `<div>${esc(byId[l.id].name)} × ${l.q} = $${(l.q * Number(byId[l.id].selling_price)).toFixed(2)}<button class="link" data-rm="${i}">${t("del")}</button></div>`).join("");
+    $("tot").textContent = `${t("tot")}: $${calc().tot.toFixed(2)}`;
+    document.querySelectorAll("button[data-rm]").forEach(b => b.onclick = () => { cart.splice(+b.dataset.rm, 1); draw(); });
+  };
+  draw();
+  $("sd").oninput = draw;
+  if ($("sadd")) $("sadd").onclick = () => {
+    const id = $("sp").value, q = parseInt($("sq").value, 10);
+    if (!(q > 0)) return say(t("bad"));
+    const have = cart.find(l => l.id === id), already = have ? have.q : 0;
+    if (already + q > Number(byId[id].quantity)) return say(t("overstock"));
+    say(""); have ? (have.q += q) : cart.push({ id, q }); draw();
+  };
+  document.querySelectorAll("button[data-sale]").forEach(b => b.onclick = () => receiptView(b.dataset.sale));
+  $("sdone").onclick = async () => {
+    if (!cart.length) return say(t("cartempty"));
+    const c = calc(); if (c.d < 0 || c.d > c.sub) return say(t("baddisc"));
+    const { data, error } = await sb.rpc("create_sale", { p_business: curBiz, p_items: cart.map(l => ({ product_id: l.id, quantity: l.q })), p_discount: c.d, p_method: $("sm").value });
+    if (error) return say(/inactive/.test(error.message) ? t("ended") : /insufficient/.test(error.message) ? t("nostockerr") + error.message.split(": ")[1] : error.message);
+    receiptView(data);
+  };
+}
+async function receiptView(id) {
+  const { data: sale } = await sb.from("sales").select("total,subtotal,discount,payment_method,created_at").eq("id", id).single();
+  const { data: items } = await sb.from("sale_items").select("product_name,quantity,unit_price,line_total").eq("sale_id", id);
+  if (!sale) return say(t("err"));
+  $("view").innerHTML = `<h2>${t("receipt")}</h2><p style="color:var(--mut)">${new Date(sale.created_at).toLocaleString()} · ${esc(sale.payment_method)}</p>
+    ${(items || []).map(i => `<div>${esc(i.product_name)} × ${esc(i.quantity)} = $${esc(i.line_total)}</div>`).join("")}
+    <p>${t("disc")}: $${esc(sale.discount)}</p><p style="font-size:20px;color:var(--gold)">${t("tot")}: $${esc(sale.total)}</p>
+    <button id="prt">${t("print")}</button><button class="link" id="bk">${t("back")}</button>`;
+  $("prt").onclick = () => window.print(); $("bk").onclick = salesView;
+}
+async function invView() {
+  const { data: rows, error } = await sb.from("products").select("id,name,selling_price,quantity,low_stock_level").eq("business_id", curBiz).order("name");
+  if (error) return say(error.message);
+  const list = (rows || []).map(p => `<div style="border:1px solid #d4af3744;border-radius:10px;padding:10px;margin:8px 0">
+    <b>${esc(p.name)}</b> ${Number(p.quantity) <= Number(p.low_stock_level) ? `<span class="err">⚠ ${t("low")}</span>` : ""}<br>
+    ${t("qty")}: ${esc(p.quantity)} · $${esc(p.selling_price)}<button class="link" data-del="${p.id}">${t("del")}</button></div>`).join("");
+  $("view").innerHTML = `<h2>${t("inv")}</h2>${list || `<p style="color:var(--mut)">${t("noprod")}</p>`}
+    <h3>${t("add")}</h3>
+    <label>${t("pname")}</label><input id="pn">
+    <label>${t("buy")}</label><input id="pb" type="number" min="0" step="0.01" inputmode="decimal">
+    <label>${t("sell")}</label><input id="ps" type="number" min="0" step="0.01" inputmode="decimal">
+    <label>${t("qty")}</label><input id="pq" type="number" min="0" step="1" inputmode="decimal">
+    <button id="padd">${t("add")}</button><button class="link" id="bk">${t("back")}</button>`;
+  $("bk").onclick = render;
+  document.querySelectorAll("button[data-del]").forEach(b => b.onclick = async () => {
+    if (!confirm(t("askdel"))) return;
+    const { error } = await sb.from("products").delete().eq("id", b.dataset.del);
+    error ? say(error.code === "42501" ? t("ended") : error.message) : invView();
+  });
+  $("padd").onclick = async () => {
+    const name = $("pn").value.trim(), pb = parseFloat($("pb").value), ps = parseFloat($("ps").value), pq = parseFloat($("pq").value);
+    if (name.length < 1 || name.length > 120 || !(pb >= 0) || !(ps >= 0) || !(pq >= 0)) return say(t("bad"));
+    const { error } = await sb.from("products").insert({ business_id: curBiz, name, purchase_price: pb, selling_price: ps, quantity: pq });
+    error ? say(error.code === "42501" ? t("ended") : error.message) : invView();
+  };
+}
+async function payView() {
+  const { data: rows } = await sb.from("payments").select("transaction_ref,status,created_at").eq("business_id", curBiz).order("created_at", { ascending: false });
+  const list = (rows || []).map(r => `<li>${esc(r.transaction_ref)} · ${t("st_" + r.status)}</li>`).join("");
+  $("view").innerHTML = `<h2>${t("pay")}</h2><p style="color:var(--mut)">${t("payInstr")}</p>
+    <label>${t("ref")}</label><input id="r" autocapitalize="characters">
+    <button id="snd">${t("send")}</button><button class="link" id="bk">${t("back")}</button>
+    ${list ? `<h3>${t("hist")}</h3><ul>${list}</ul>` : ""}`;
+  $("bk").onclick = render;
+  $("snd").onclick = async () => {
+    const ref = $("r").value.trim().toUpperCase();
+    if (ref.length < 4 || ref.length > 64) return say(t("ref"));
+    const { data: { user } } = await sb.auth.getUser();
+    const { error } = await sb.from("payments").insert({ business_id: curBiz, submitted_by: user.id, amount_usd: 5, transaction_ref: ref });
+    if (error) return say(error.code === "23505" ? t("dup") : error.message);
+    await payView(); say(t("sent"), true);
+  };
+}
+async function adminView() {
+  const { data: rows, error } = await sb.from("payments").select("id,transaction_ref,amount_usd,created_at,businesses(name)").eq("status", "submitted").order("created_at");
+  if (error) return say(error.message);
+  const list = (rows || []).map(r => `<div style="border:1px solid #d4af3744;border-radius:10px;padding:10px;margin:8px 0">
+    <b>${esc(r.businesses && r.businesses.name)}</b><br>${esc(r.transaction_ref)} · $${esc(r.amount_usd)}
+    <button data-id="${r.id}" data-a="1">${t("ok")}</button><button data-id="${r.id}" data-a="0" style="background:var(--red);color:#fff">${t("no")}</button></div>`).join("");
+  $("view").innerHTML = `<h2>${t("admin")}</h2>${list || `<p>${t("none")}</p>`}<button class="link" id="out">${t("out")}</button>`;
+  $("out").onclick = async () => { await sb.auth.signOut(); render(); };
+  document.querySelectorAll("button[data-id]").forEach(b => b.onclick = async () => {
+    const { error } = await sb.rpc("review_payment", { p_id: b.dataset.id, p_approve: b.dataset.a === "1" });
+    error ? say(error.message) : adminView();
+  });
+}
+function bizView() {
+  $("view").innerHTML = `<label>${t("bizname")}</label><input id="b"><button id="mk">${t("create")}</button>`;
+  $("mk").onclick = async () => {
+    const n = $("b").value.trim(); if (n.length < 2) return say(t("bizname"));
+    const { error } = await sb.rpc("create_business", { p_name: n });
+    error ? say(error.message) : render();
+  };
+}
+$("lang").onclick = () => { lang = lang === "so" ? "en" : "so"; localStorage.setItem("giro_lang", lang); render(); };
+$("theme").onclick = () => { const r = document.documentElement; r.dataset.theme = r.dataset.theme === "light" ? "dark" : "light"; };
+sb.auth.onAuthStateChange(() => {});
+render();
+</script>
+</body>
+</html>
